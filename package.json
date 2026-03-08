@@ -1,0 +1,17 @@
+{
+  "name": "kaloria",
+  "version": "1.0.0",
+  "description": "Kaloria AI - Gamified Health Engine",
+  "main": "app.py",
+  "scripts": {
+    "dev": "uvicorn app:app --reload",
+    "start": "uvicorn app:app --host 0.0.0.0 --port 8000",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["health", "ai", "gemini", "gamified", "tracker"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vercel": "latest"
+  }
+}

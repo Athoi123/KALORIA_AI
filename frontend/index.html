@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaloria AI - Gamified Health Engine</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+    
+    <!-- 3D Falling Leaves Background -->
+    <div id="leaves-container"></div>
+
+    <!-- 1. LOADING OVERLAY -->
+    <div id="loader-screen" class="overlay flex-center">
+        <div class="loader-content">
+            <i class="ph-fill ph-leaf logo-icon neon-glow"></i>
+            <h1 class="glitch-text" data-text="KALORIA AI">KALORIA AI</h1>
+            <div class="cylinder-container">
+                <div class="cylinder-fill" id="loader-bar"></div>
+            </div>
+            <p id="loader-text" class="mono-text">Initializing Systems: 0%</p>
+        </div>
+    </div>
+
+    <!-- 2. AUTHENTICATION & ONBOARDING -->
+    <div id="auth-screen" class="overlay flex-center" style="display: none; opacity: 0;">
+        <div class="glass-panel 3d-card" id="login-panel">
+            <h2>Welcome Back</h2>
+            <div class="input-group">
+                <i class="ph ph-envelope"></i>
+                <input type="email" placeholder="Email Address" id="auth-email">
+            </div>
+            <div class="input-group">
+                <i class="ph ph-lock"></i>
+                <input type="password" placeholder="Password" id="auth-password">
+            </div>
+            <button class="btn btn-primary fluid" id="login-btn">ENTER SYSTEM</button>
+            <p class="toggle-text">New here? <a href="#" id="to-register">Initialize Profile</a></p>
+        </div>
+
+        <div class="glass-panel 3d-card" id="register-panel" style="display: none;">
+            <h2>Personalized Assessment</h2>
+            <p class="mono-text sm-text text-muted">To prevent anemia & optimize stress.</p>
+            
+            <div class="form-grid">
+                <div class="input-group"><i class="ph ph-user"></i><input type="text" id="reg-name" placeholder="Name"></div>
+                <div class="input-group"><i class="ph ph-envelope"></i><input type="email" id="reg-email" placeholder="Email Address"></div>
+                <div class="input-group"><i class="ph ph-lock"></i><input type="password" id="reg-password" placeholder="Create Password"></div>
+                <div class="input-group"><input type="number" id="reg-age" placeholder="Age (Yrs)"></div>
+                <div class="input-group"><input type="number" id="reg-weight" placeholder="Weight (kg)"></div>
+                <div class="input-group">
+                    <select id="reg-job">
+                        <option value="">Select Job Type (Stress Level)</option>
+                        <option value="desk_job">Desk Job (Sedentary)</option>
+                        <option value="active_labor">Active Labor (Physical)</option>
+                        <option value="student">Student (Mental Load)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group margin-top">
+                <select id="reg-condition">
+                    <option value="none">Special Condition: None</option>
+                    <option value="pregnant">Pregnancy Nutrition Mode</option>
+                    <option value="child">Child Growth Mode</option>
+                    <option value="diabetic">Diabetic Care</option>
+                </select>
+            </div>
+            <div class="input-group margin-top">
+                <select id="reg-goal">
+                    <option value="weight_loss">Goal: Weight Loss</option>
+                    <option value="maintenance">Goal: Maintenance</option>
+                    <option value="muscle_gain">Goal: Muscle Gain</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary fluid margin-top" id="register-btn">COMPILE PROFILE</button>
+            <p class="toggle-text">Returning? <a href="#" id="to-login">Login</a></p>
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD MAIN APP -->
+    <div id="app-dashboard" style="display: none; opacity: 0;">
+        <aside class="sidebar glass-panel">
+            <div class="logo">
+                <i class="ph-fill ph-leaf neon-text"></i>
+                <span>Kaloria</span>
+            </div>
+            <nav class="menu">
+                <a href="#" class="menu-item active" data-target="home"><i class="ph ph-squares-four"></i> Overview</a>
+                <a href="#" class="menu-item" data-target="scan"><i class="ph ph-camera"></i> AI Food Scan</a>
+                <a href="#" class="menu-item" data-target="coach"><i class="ph ph-chat-circle-dots"></i> Diet Coach</a>
+                <a href="#" class="menu-item" data-target="rewards"><i class="ph ph-medal"></i> Vault</a>
+            </nav>
+            <div class="user-chip" id="profile-edit-btn" style="cursor: pointer;">
+                <div class="avatar-container" onclick="document.getElementById('avatar-upload').click(); event.stopPropagation();">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="avatar" id="sidebar-avatar">
+                    <input type="file" id="avatar-upload" accept="image/*" style="display:none;">
+                </div>
+                <div>
+                    <strong id="dash-name">User</strong>
+                    <span class="mono-text neon-text small" id="dash-mode">Normal Mode</span>
+                </div>
+            </div>
+            <button class="btn btn-secondary fluid" onclick="location.reload()"><i class="ph ph-sign-out"></i> Reboot</button>
+        </aside>
+
+        <main class="content-area">
+            <header class="topbar glass-panel">
+                <h2 id="view-title">Command Center</h2>
+                <div class="top-stats">
+                    <div class="pill"><i class="ph ph-coin neon-text"></i> <span id="dash-coins">150</span> XP</div>
+                    <div class="pill"><i class="ph ph-fire text-orange"></i> <span id="dash-streak">4</span> Days</div>
+                </div>
+            </header>
+
+            <div class="view-container" id="view-home">
+                <div class="metrics-row">
+                    <div class="metric-card 3d-card primary-accent">
+                        <h3>Calories Today</h3>
+                        <div class="giant-stat"><span id="cals-consumed">0</span> <span style="font-size:1rem; color:var(--text-muted)">/ <span id="cals-goal">2000</span></span></div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="cals-progress" style="width:0%"></div>
+                        </div>
+                    </div>
+                     <div class="metric-card 3d-card">
+                        <h3>Stress Index</h3>
+                        <div class="giant-stat text-blue">Low</div>
+                        <p class="mono-text">Hydration optimal</p>
+                    </div>
+                    <div class="metric-card 3d-card bg-pattern">
+                        <h3>Next Achievement</h3>
+                        <div class="giant-stat neon-text" id="next-achieve-level">Level 1</div>
+                        <p class="mono-text" id="next-achieve-xp">100 XP to go</p>
+                    </div>
+                </div>
+
+                <div class="widgets-row">
+                    <div class="widget 3d-card">
+                        <div class="flex-between">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="action-grid margin-top">
+                            <button class="action-btn" id="quick-log"><i class="ph ph-plus"></i> Manual Log</button>
+                            <button class="action-btn" onclick="document.querySelector('[data-target=\'scan\']').click()"><i class="ph ph-camera"></i> Scan Meal</button>
+                        </div>
+                    </div>
+                     <div class="widget 3d-card">
+                         <h3>Today's History</h3>
+                         <div class="history-list margin-top" id="food-history-list">
+                             <p class="text-muted sm-text">No meals logged yet today.</p>
+                         </div>
+                     </div>
+                </div>
+            </div>
+
+            <!-- AI FOOD SCAN VIEW -->
+            <div class="view-container" id="view-scan" style="display: none;">
+                <div class="scanner-box 3d-card flex-center direction-col">
+                    <i class="ph ph-scan giant-icon neon-text"></i>
+                    <h2>Visual Analysis Engine</h2>
+                    <p class="text-muted">Upload a photo for instant macro breakdown.</p>
+                    <div class="upload-area" id="upload-zone">
+                        <img id="food-preview" class="image-preview" src="" alt="preview"/>
+                        <input type="file" id="food-image-input" accept="image/*" style="display:none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('food-image-input').click()">
+                            <i class="ph ph-upload-simple"></i> Select Image
+                        </button>
+                        <p class="mono-text sm-text margin-top" id="file-name">No file selected</p>
+                    </div>
+                    <button class="btn btn-secondary margin-top" id="analyze-vision-btn" disabled>
+                        INITIALIZE SCAN
+                    </button>
+
+                    <div id="scan-results" class="margin-top glass-panel" style="display: none; width: 100%; text-align: left;">
+                        <h3 class="neon-text">Analysis Complete</h3>
+                        <div class="result-row"><span class="label">Identified:</span> <strong id="scan-food-name">...</strong></div>
+                        <div class="result-row"><span class="label">Energy:</span> <strong id="scan-calories">...</strong> kcal</div>
+                        <div class="result-row"><span class="label">Protein:</span> <strong id="scan-protein">...</strong></div>
+                        <button class="btn btn-primary fluid margin-top" id="confirm-log-btn">Log this Meal (+50 XP)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI COACH VIEW -->
+            <div class="view-container" id="view-coach" style="display: none;">
+                <div class="chat-container 3d-card">
+                    <div class="chat-header">
+                        <div class="flex-row">
+                            <i class="ph-fill ph-robot neon-text giant-icon"></i>
+                            <div>
+                                <h3>Kaloria Core</h3>
+                                <p class="mono-text text-muted">Specialized AI Dietitian Online</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-history" id="chat-history">
+                        <div class="chat-msg bot">
+                            <div class="msg-bubble">Kaloria Engine initialized. Sensing your biometric profile. How can I optimize your nutrition today?</div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Ask about meal plans, anemia prevention, etc...">
+                        <button class="icon-btn" id="send-chat-btn"><i class="ph-fill ph-paper-plane-right neon-text"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REWARDS VIEW -->
+            <div class="view-container" id="view-rewards" style="display: none;">
+                <div class="3d-card">
+                    <h2>The Vault (Gamification)</h2>
+                    <p class="text-muted">Exchange Health XP for premium recipes and routines.</p>
+                    <div class="grid-columns margin-top">
+                        <div class="reward-item glass-panel flex-center direction-col">
+                            <i class="ph-fill ph-book-open"></i>
+                            <h4>Premium Keto Guide</h4>
+                            <button class="btn btn-secondary small-btn" id="streak-7-btn">Start 7-Day Streak</button>
+                        </div>
+                        <div class="reward-item glass-panel flex-center direction-col">
+                            <i class="ph-fill ph-barbell"></i>
+                            <h4>30-Day Routine</h4>
+                            <button class="btn btn-secondary small-btn" id="streak-30-btn">Start 30-Day Streak</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="profile-modal" class="overlay flex-center" style="display: none; z-index: 1000; background: rgba(0,0,0,0.8);">
+        <div class="glass-panel 3d-card" style="width: 450px; max-width: 90%;">
+            <h2>Edit Profile</h2>
+            <div class="form-grid">
+                <div class="input-group"><i class="ph ph-user"></i><input type="text" id="edit-name" placeholder="Name"></div>
+                <div class="input-group"><input type="number" id="edit-age" placeholder="Age (Yrs)"></div>
+                <div class="input-group"><input type="number" id="edit-weight" placeholder="Weight (kg)"></div>
+                <div class="input-group">
+                    <select id="edit-job">
+                        <option value="desk_job">Desk Job (Sedentary)</option>
+                        <option value="active_labor">Active Labor (Physical)</option>
+                        <option value="student">Student (Mental Load)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group margin-top">
+                <select id="edit-condition">
+                    <option value="none">Special Condition: None</option>
+                    <option value="pregnant">Pregnancy Nutrition Mode</option>
+                    <option value="child">Child Growth Mode</option>
+                    <option value="diabetic">Diabetic Care</option>
+                </select>
+            </div>
+            <div class="flex-row margin-top">
+                <button class="btn btn-secondary fluid" id="close-profile-btn">CANCEL</button>
+                <button class="btn btn-primary fluid" id="save-profile-btn">SAVE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script loaded at the end -->
+    <script src="/static/script.js"></script>
+</body>
+</html>
