@@ -2,6 +2,7 @@ import sys
 import os
 
 # Import Layer 3 Tools
+from tools.ai_responder import process_chat
 from tools.food_detection import detect_food
 from tools.calorie_estimator import estimate_calories
 from tools.calorie_tracker import calculate_daily_total
@@ -61,13 +62,26 @@ def process_ai_coach_flow(payload: dict) -> dict:
     User asks question -> retrieve profile -> analyze nutrition data -> generate AI advice
     """
     print("\n--- Starting AI Coach Flow ---")
-    question = payload.get("question")
-    # In a real app, this routes to an AI responder script
+    question = payload.get("question") or payload.get("user_message") or ""
+    user_profile = payload.get("user_profile") or payload.get("context") or {}
+    user_id = payload.get("user_id") or user_profile.get("name") or "User"
+    goal_type = payload.get("goal_type") or user_profile.get("condition") or "health_focus"
+
+    if not question:
+        return {"status": "error", "message": "No question provided for AI coach."}
+
     print(f"Routing question to LLM: '{question}'")
-    
+    result = process_chat(
+        user_id=user_id,
+        message=question,
+        context=user_profile,
+        goal_type=goal_type,
+    )
+
     return {
-        "status": "success",
-        "ai_response": "Based on your remaining macros, try a spinach and egg salad!"
+        "status": result.get("status", "success"),
+        "ai_response": result.get("reply") or result.get("text") or "No answer available.",
+        "gamification_points_earned": result.get("gamification_points_earned", 0),
     }
 
 def process_gamification_flow(payload: dict) -> dict:

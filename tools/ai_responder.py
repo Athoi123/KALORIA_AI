@@ -1,49 +1,120 @@
+
 import os
-import google.generativeai as genai
 
-# Load Gemini key
-api_key = os.environ.get("GEMINI_API_KEY", "AIzaSyCXUf5z6SF8lT-CqiS8B1D1gzyfCUo8sAI")
-genai.configure(api_key=api_key)
+from dotenv import load_dotenv
+from google import genai
 
-def process_chat(user_id: str, message: str, context: dict, goal_type: str = "health_focus"):
+from tools.gemini_fallback import generate_with_fallback
+
+
+def _get_client():
+    """Load the latest .env values and create a Gemini client."""
+    load_dotenv()
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        raise EnvironmentError("GEMINI_API_KEY is missing")
+
+    return genai.Client(
+        api_key=api_key,
+        http_options=genai.types.HttpOptions(timeout=60000),
+    )
+
+
+def process_chat(
+    user_id: str,
+    message: str,
+    context: dict,
+    goal_type: str = "health_focus"
+):
     """
-    Uses Gemini API to provide expert dietitian and mental health coaching.
-    Context includes age, weight, job (stress), and special_condition (pregnancy/child).
+    Uses Gemini API to provide diet and health coaching.
+    Context includes age, weight, job/stress information,
+    and special condition.
     """
-    print(f"[Tool: ai_responder] Processing real generative message for {user_id}...")
-    
+
+    print(
+        f"[Tool: ai_responder] Processing real generative message "
+        f"for {user_id}..."
+    )
+
+    condition = (context or {}).get("condition", "none") or "none"
+    age = (context or {}).get("age", "unknown")
+    weight = (context or {}).get("weight", "unknown")
+    job = (context or {}).get("job", "unknown")
+
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        
-        # Build prompt from context
-        ctx_str = f"User Profile: Age {context.get('age', 'Unknown')}, Weight {context.get('weight_kg', 'Unknown')}kg, Goal: {goal_type}. "
-        ctx_str += f"Job type: {context.get('job_category', 'Unknown')} (consider stress levels). "
-        
-        condition = context.get('special_condition', 'none')
-        if condition != 'none':
-            ctx_str += f"CRITICAL MEDICAL CONTEXT: The user is in '{condition}' mode. Ensure you provide advice to prevent anemia, malnutrition safely for this condition. "
-            
-        sys_prompt = "You are Kaloria Core, a gamified AI Dietitian & Health Coach. Be concise, encouraging, and scientific but friendly. Do not give medical diagnoses, but give strong nutritional guidance based on context. Format output cleanly without markdown bolding if possible."
-        
-        full_prompt = f"{sys_prompt}\n\nContext:\n{ctx_str}\n\nUser Message:\n{message}"
-        
-        response = model.generate_content(full_prompt)
+        client = _get_client()
+
+        ctx_str = (
+            f"User Profile: Age {age}, Weight {weight}kg, "
+            f"Goal: {goal_type}. "
+        )
+
+        ctx_str += (
+            f"Job type: {job} (consider stress levels). "
+        )
+
+        if condition != "none":
+            ctx_str += (
+                f"CRITICAL MEDICAL CONTEXT: The user is in "
+                f"'{condition}' mode. Provide safe, general "
+                f"nutritional guidance appropriate to this context. "
+                f"Do not diagnose medical conditions. "
+            )
+
+        sys_prompt = (
+            "You are Kaloria Core, a gamified AI Dietitian & "
+            "Health Coach. Be concise, encouraging, scientific, "
+            "and friendly. Do not give medical diagnoses. "
+            "Give practical nutritional guidance based on the "
+            "user's context. Format the response cleanly."
+        )
+
+        full_prompt = (
+            f"{sys_prompt}\n\n"
+            f"Context:\n{ctx_str}\n\n"
+            f"User Message:\n{message}"
+        )
+
+        response = generate_with_fallback(client, full_prompt)
+
         reply = response.text.strip()
-        
+
         return {
             "status": "success",
             "reply": reply,
-            "gamification_points_earned": 10
-        }
-        
-    except Exception as e:
-        print(f"Error in ai_responder: {e}")
-        return {
-            "status": "error",
-            "reply": "My neural link is currently unstable. Please try again later.",
-            "gamification_points_earned": 0
+            "gamification_points_earned": 10,
         }
 
+    except Exception as e:
+        print(f"Error in ai_responder: {e}")
+
+        return {
+            "status": "error",
+            "reply": (
+                "Sorry, the Diet Coach AI is temporarily unavailable "
+                "(service busy or daily limit reached). "
+                "Please try your question again in a little while."
+            ),
+            "gamification_points_earned": 0,
+        }
+
+
 if __name__ == "__main__":
-    ctx = {"age": 25, "weight_kg": 70, "job_category": "student", "special_condition": "pregnant"}
-    print(process_chat("123", "What should I eat for dinner to keep my iron up?", ctx))
+    ctx = {
+        "age": 25,
+        "weight": 70,
+        "job": "student",
+        "condition": "pregnant"
+    }
+
+    print(
+        process_chat(
+            "123",
+            "What should I eat for dinner to keep my iron up?",
+            ctx
+        )
+    )
+
